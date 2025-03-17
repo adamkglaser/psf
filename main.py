@@ -157,9 +157,9 @@ def volume(im: numpy.ndarray, center: tuple, window: tuple) -> numpy.ndarray:
     """
     if inside(im.shape, center, window):
         volume = im[
-            (center[0] - window[0]):(center[0] + window[0]),
-            (center[1] - window[1]):(center[1] + window[1]),
-            (center[2] - window[2]):(center[2] + window[2]),
+            (center[0] - window[0]) : (center[0] + window[0]),
+            (center[1] - window[1]) : (center[1] + window[1]),
+            (center[2] - window[2]) : (center[2] + window[2]),
         ]
         volume = volume.astype("float64")
         baseline = volume[[0, -1], [0, -1], [0, -1]].mean()
@@ -181,16 +181,16 @@ def findBeads(im: numpy.ndarray, window: tuple, thresh: float) -> tuple:
     :return: Coordinates of detected beads and the smoothed image.
     :rtype: tuple
     """
-    smoothed = gaussian_filter(
-        image=im, sigma=1.0, mode="nearest", cval=0
-    )
+    smoothed = gaussian_filter(image=im, sigma=1.0, mode="nearest", cval=0)
     centers = peak_local_max(
         smoothed, min_distance=3, threshold_rel=thresh, exclude_border=True
     )
     return centers, smoothed.max(axis=0)
 
 
-def keepBeads(im: numpy.ndarray, window: tuple, centers: numpy.ndarray, options: dict) -> numpy.ndarray:
+def keepBeads(
+    im: numpy.ndarray, window: tuple, centers: numpy.ndarray, options: dict
+) -> numpy.ndarray:
     """
     Filter out beads that are too close to each other or outside the image boundaries.
 
@@ -246,7 +246,11 @@ def getCenters(im: numpy.ndarray, options: dict) -> tuple:
     return beads, maxima, centers, smoothed
 
 
-def getSlices(average):
+import numpy as np
+from typing import Tuple, List
+
+
+def getSlices(average: np.ndarray) -> Tuple[np.ndarray, np.ndarray]:
     """
     Compute the lateral and axial profiles from the average array.
 
@@ -255,12 +259,23 @@ def getSlices(average):
     :return: Tuple containing the lateral and axial profiles.
     :rtype: tuple
     """
-    latProfile = (average.mean(axis=0).mean(axis=1) + average.mean(axis=0).mean(axis=1))/2
-    axProfile = (average.mean(axis=1).mean(axis=1) + average.mean(axis=2).mean(axis=1))/2
+    latProfile = (
+        average.mean(axis=0).mean(axis=1) + average.mean(axis=0).mean(axis=1)
+    ) / 2
+    axProfile = (
+        average.mean(axis=1).mean(axis=1) + average.mean(axis=2).mean(axis=1)
+    ) / 2
     return latProfile, axProfile
 
 
-def get3DPSF(bead, XYZ, initial_guess, lower_bounds, upper_bounds, options):
+def get3DPSF(
+    bead: np.ndarray,
+    XYZ: np.ndarray,
+    initial_guess: List[float],
+    lower_bounds: List[float],
+    upper_bounds: List[float],
+    options: dict,
+) -> DataFrame:
     """
     Fit a 3D Gaussian to the bead data.
 
@@ -279,7 +294,7 @@ def get3DPSF(bead, XYZ, initial_guess, lower_bounds, upper_bounds, options):
     :return: DataFrame containing the fitted parameters.
     :rtype: pandas.DataFrame
     """
-    bead = bead / numpy.max(bead)
+    bead = bead / np.max(bead)
 
     popt, _ = opt.curve_fit(
         gaussian_3D,
@@ -304,17 +319,12 @@ def get3DPSF(bead, XYZ, initial_guess, lower_bounds, upper_bounds, options):
     )
 
     FWHM_x = (
-        numpy.abs(4 * sigma_x * numpy.sqrt(-0.5 * numpy.log(0.5)))
-        / options["px_per_um_lat"]
+        np.abs(4 * sigma_x * np.sqrt(-0.5 * np.log(0.5))) / options["px_per_um_lat"]
     )
     FWHM_y = (
-        numpy.abs(4 * sigma_y * numpy.sqrt(-0.5 * numpy.log(0.5)))
-        / options["px_per_um_lat"]
+        np.abs(4 * sigma_y * np.sqrt(-0.5 * np.log(0.5))) / options["px_per_um_lat"]
     )
-    FWHM_z = (
-        numpy.abs(4 * sigma_z * numpy.sqrt(-0.5 * numpy.log(0.5)))
-        / options["px_per_um_ax"]
-    )
+    FWHM_z = np.abs(4 * sigma_z * np.sqrt(-0.5 * np.log(0.5))) / options["px_per_um_ax"]
 
     data = DataFrame(
         [xo, yo, zo, amplitude, offset, FWHM_x, FWHM_y, FWHM_z, rotx, roty, rotz],
@@ -336,7 +346,7 @@ def get3DPSF(bead, XYZ, initial_guess, lower_bounds, upper_bounds, options):
     return data
 
 
-def get2DPSF(bead, options):
+def get2DPSF(bead: np.ndarray, options: dict) -> DataFrame:
     """
     Fit 2D Gaussians to the lateral and axial profiles of the bead.
 
@@ -348,8 +358,8 @@ def get2DPSF(bead, options):
     :rtype: pandas.DataFrame
     """
     latProfile, axProfile = getSlices(bead)
-    latFit = gaussian_2D(latProfile, options['px_per_um_lat'])
-    axFit = gaussian_2D(axProfile, options['px_per_um_ax'])
+    latFit = gaussian_2D(latProfile, options["px_per_um_lat"])
+    axFit = gaussian_2D(axProfile, options["px_per_um_ax"])
     data = DataFrame(
         [latFit[3], axFit[3]],
         index=[
@@ -360,7 +370,7 @@ def get2DPSF(bead, options):
     return data
 
 
-def dist(x, y):
+def dist(x: np.ndarray, y: np.ndarray) -> float:
     """
     Calculate the Euclidean distance between two points, excluding the first dimension.
 
@@ -374,7 +384,7 @@ def dist(x, y):
     return ((x - y) ** 2)[1:].sum() ** (0.5)
 
 
-def nearest(x, centers):
+def nearest(x: np.ndarray, centers: np.ndarray) -> float:
     """
     Find the nearest center to the given point x.
 
@@ -389,7 +399,9 @@ def nearest(x, centers):
     return abs(array(z)).min(axis=0)
 
 
-def gaussian_1D(x, a, mu, sigma, b):
+def gaussian_1D(
+    x: np.ndarray, a: float, mu: float, sigma: float, b: float
+) -> np.ndarray:
     """
     1D Gaussian function.
 
@@ -406,10 +418,12 @@ def gaussian_1D(x, a, mu, sigma, b):
     :return: Gaussian function evaluated at x.
     :rtype: numpy.ndarray
     """
-    return a * exp(-(x - mu) ** 2 / (2 * sigma ** 2)) + b
+    return a * exp(-((x - mu) ** 2) / (2 * sigma**2)) + b
 
 
-def gaussian_2D(yRaw, scale):
+def gaussian_2D(
+    yRaw: np.ndarray, scale: float
+) -> Tuple[np.ndarray, np.ndarray, np.ndarray, float]:
     """
     Fit a 2D Gaussian to the given data.
 
@@ -421,7 +435,7 @@ def gaussian_2D(yRaw, scale):
     :rtype: tuple
     """
     y = yRaw - (yRaw[0] + yRaw[-1]) / 2
-    x = (array(range(y.shape[0])) - y.shape[0] / 2)
+    x = array(range(y.shape[0])) - y.shape[0] / 2
     popt, _ = opt.curve_fit(gaussian_1D, x, y, p0=[1, 0, 1, 0])
     FWHM = 2.355 * popt[2] / scale
     yFit = gaussian_1D(x, *popt)
@@ -429,8 +443,19 @@ def gaussian_2D(yRaw, scale):
 
 
 def gaussian_3D(
-    XYZ, xo, yo, zo, sigma_x, sigma_y, sigma_z, amplitude, offset, rotx, roty, rotz
-):
+    XYZ: np.ndarray,
+    xo: float,
+    yo: float,
+    zo: float,
+    sigma_x: float,
+    sigma_y: float,
+    sigma_z: float,
+    amplitude: float,
+    offset: float,
+    rotx: float,
+    roty: float,
+    rotz: float,
+) -> np.ndarray:
     """
     3D Gaussian function with rotation.
 
@@ -461,35 +486,35 @@ def gaussian_3D(
     :return: Flattened 3D Gaussian function evaluated at XYZ.
     :rtype: numpy.ndarray
     """
-    XRot = numpy.array(
+    XRot = np.array(
         [
             [1, 0, 0],
-            [0, numpy.cos(rotx), numpy.sin(rotx)],
-            [0, -numpy.sin(rotx), numpy.cos(rotx)],
+            [0, np.cos(rotx), np.sin(rotx)],
+            [0, -np.sin(rotx), np.cos(rotx)],
         ]
     )
 
-    YRot = numpy.array(
+    YRot = np.array(
         [
-            [numpy.cos(roty), 0, -numpy.sin(roty)],
+            [np.cos(roty), 0, -np.sin(roty)],
             [0, 1, 0],
-            [numpy.sin(roty), 0, numpy.cos(roty)],
+            [np.sin(roty), 0, np.cos(roty)],
         ]
     )
 
-    ZRot = numpy.array(
+    ZRot = np.array(
         [
-            [numpy.cos(rotz), numpy.sin(rotz), 0],
-            [-numpy.sin(rotz), numpy.cos(rotz), 0],
+            [np.cos(rotz), np.sin(rotz), 0],
+            [-np.sin(rotz), np.cos(rotz), 0],
             [0, 0, 1],
         ]
     )
 
-    XYZ = numpy.einsum("ij,jabc->iabc", XRot, XYZ)
-    XYZ = numpy.einsum("ij,jabc->iabc", YRot, XYZ)
-    XYZ = numpy.einsum("ij,jabc->iabc", ZRot, XYZ)
+    XYZ = np.einsum("ij,jabc->iabc", XRot, XYZ)
+    XYZ = np.einsum("ij,jabc->iabc", YRot, XYZ)
+    XYZ = np.einsum("ij,jabc->iabc", ZRot, XYZ)
 
-    g = offset + amplitude * numpy.exp(
+    g = offset + amplitude * np.exp(
         -(
             ((XYZ[0] - xo) ** 2) / (2 * sigma_x**2)
             + ((XYZ[1] - yo) ** 2) / (2 * sigma_y**2)
