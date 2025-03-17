@@ -1,5 +1,8 @@
 import math
+from typing import List, Tuple
+
 import numpy
+import numpy as np
 import pandas as pd
 import scipy.optimize as opt
 from numpy import all, array, asarray, exp, where
@@ -244,10 +247,6 @@ def getCenters(im: numpy.ndarray, options: dict) -> tuple:
     beads = [volume(im, x, window) for x in centers]
     maxima = [im[x[0], x[1], x[2]] for x in centers]
     return beads, maxima, centers, smoothed
-
-
-import numpy as np
-from typing import Tuple, List
 
 
 def getSlices(average: np.ndarray) -> Tuple[np.ndarray, np.ndarray]:
