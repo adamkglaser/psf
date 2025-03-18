@@ -26,63 +26,64 @@ def compute(im: numpy.ndarray, options: dict) -> tuple:
 
     beads, maxima, centers, smoothed = getCenters(im, options)
 
-    initial_guess = (
-        0,  # x0
-        0,  # y0
-        0,  # z0
-        (options["wavelength_nm"] / 1000.0 / (2 * options["NA"]))  # sigma_x
-        * options["px_per_um_lat"]
-        / (4 * numpy.sqrt(-0.5 * numpy.log(0.5)))
-        + options["bead_size_um"],
-        (options["wavelength_nm"] / 1000.0 / (2 * options["NA"]))  # sigma_y
-        * options["px_per_um_lat"]
-        / (4 * numpy.sqrt(-0.5 * numpy.log(0.5)))
-        + options["bead_size_um"],
-        (options["wavelength_nm"] / 1000.0 / (2 * options["NA"]))  # sigma_z
-        * options["px_per_um_ax"]
-        / (4 * numpy.sqrt(-0.5 * numpy.log(0.5)))
-        + options["bead_size_um"],
-        1,  # amplitude
-        0,  # offset
-        0,  # rotx
-        0,  # roty
-        0,  # rotz
-    )
-
-    lower_bounds = (
-        -beads[0].shape[2] / 2.0,  # x0
-        -beads[0].shape[1] / 2.0,  # y0
-        -beads[0].shape[0] / 2.0,  # z0
-        0.1,  # sigma_x
-        0.1,  # sigma_y
-        0.1,  # sigma_z
-        0.5,  # amplitude
-        -0.1,  # offset
-        -math.pi / 2.0,  # rotx
-        -math.pi / 2.0,  # roty
-        -math.pi / 2.0,  # rotz
-    )
-
-    upper_bounds = (
-        beads[0].shape[2] / 2.0,  # x0
-        beads[0].shape[1] / 2.0,  # y0
-        beads[0].shape[0] / 2.0,  # z0
-        beads[0].shape[2],  # sigma_x
-        beads[0].shape[1],  # sigma_y
-        beads[0].shape[0],  # sigma_z
-        1.1,  # amplitude
-        0.1,  # offset
-        math.pi / 2.0,  # rotx
-        math.pi / 2.0,  # roty
-        math.pi / 2.0,  # rotz
-    )
-
     if options["max_beads"]:
         max_beads = options["max_beads"]
     else:
         max_beads = len(beads)
 
     if options["fit_mode"] == "3D":
+
+        initial_guess = (
+            0,  # x0
+            0,  # y0
+            0,  # z0
+            (options["wavelength_nm"] / 1000.0 / (2 * options["NA"]))  # sigma_x
+            * options["px_per_um_lat"]
+            / (4 * numpy.sqrt(-0.5 * numpy.log(0.5)))
+            + options["bead_size_um"],
+            (options["wavelength_nm"] / 1000.0 / (2 * options["NA"]))  # sigma_y
+            * options["px_per_um_lat"]
+            / (4 * numpy.sqrt(-0.5 * numpy.log(0.5)))
+            + options["bead_size_um"],
+            (options["wavelength_nm"] / 1000.0 / (2 * options["NA"]))  # sigma_z
+            * options["px_per_um_ax"]
+            / (4 * numpy.sqrt(-0.5 * numpy.log(0.5)))
+            + options["bead_size_um"],
+            1,  # amplitude
+            0,  # offset
+            0,  # rotx
+            0,  # roty
+            0,  # rotz
+        )
+
+        lower_bounds = (
+            -beads[0].shape[2] / 2.0,  # x0
+            -beads[0].shape[1] / 2.0,  # y0
+            -beads[0].shape[0] / 2.0,  # z0
+            0.1,  # sigma_x
+            0.1,  # sigma_y
+            0.1,  # sigma_z
+            0.5,  # amplitude
+            -0.1,  # offset
+            -math.pi / 2.0,  # rotx
+            -math.pi / 2.0,  # roty
+            -math.pi / 2.0,  # rotz
+        )
+
+        upper_bounds = (
+            beads[0].shape[2] / 2.0,  # x0
+            beads[0].shape[1] / 2.0,  # y0
+            beads[0].shape[0] / 2.0,  # z0
+            beads[0].shape[2],  # sigma_x
+            beads[0].shape[1],  # sigma_y
+            beads[0].shape[0],  # sigma_z
+            1.1,  # amplitude
+            0.1,  # offset
+            math.pi / 2.0,  # rotx
+            math.pi / 2.0,  # roty
+            math.pi / 2.0,  # rotz
+        )
+
         x = numpy.linspace(
             -beads[0].shape[2] / 2.0, beads[0].shape[2] / 2.0, beads[0].shape[2]
         )
@@ -92,7 +93,9 @@ def compute(im: numpy.ndarray, options: dict) -> tuple:
         z = numpy.linspace(
             -beads[0].shape[0] / 2.0, beads[0].shape[0] / 2.0, beads[0].shape[0]
         )
+
         X, Z, Y = numpy.meshgrid(x, z, y)
+
         data = [
             get3DPSF(
                 i,
@@ -105,9 +108,37 @@ def compute(im: numpy.ndarray, options: dict) -> tuple:
             for i in beads[:max_beads]
         ]
     else:
+
+        initial_guess = (
+            0,  # x0
+            (options["wavelength_nm"] / 1000.0 / (2 * options["NA"]))  # sigma
+            * options["px_per_um_lat"]
+            / (4 * numpy.sqrt(-0.5 * numpy.log(0.5)))
+            + options["bead_size_um"],
+            1,  # amplitude
+            0,  # offset
+        )
+
+        lower_bounds = (
+            -beads[0].shape[2] / 2.0,  # x0
+            0.1,  # sigma
+            0.5,  # amplitude
+            -0.1,  # offset
+        )
+
+        upper_bounds = (
+            beads[0].shape[2] / 2.0,  # x0
+            beads[0].shape[0],  # sigma
+            1.1,  # amplitude
+            0.1,  # offset
+        )
+
         data = [
             get2DPSF(
                 i,
+                initial_guess,
+                lower_bounds,
+                upper_bounds,
                 options,
             )
             for i in beads[:max_beads]
@@ -160,9 +191,9 @@ def volume(im: numpy.ndarray, center: tuple, window: tuple) -> numpy.ndarray:
     """
     if inside(im.shape, center, window):
         volume = im[
-            (center[0] - window[0]) : (center[0] + window[0]),
-            (center[1] - window[1]) : (center[1] + window[1]),
-            (center[2] - window[2]) : (center[2] + window[2]),
+            (center[0] - window[0]):(center[0] + window[0]),
+            (center[1] - window[1]):(center[1] + window[1]),
+            (center[2] - window[2]):(center[2] + window[2]),
         ]
         volume = volume.astype("float64")
         baseline = volume[[0, -1], [0, -1], [0, -1]].mean()
@@ -267,6 +298,35 @@ def getSlices(average: np.ndarray) -> Tuple[np.ndarray, np.ndarray]:
     return latProfile, axProfile
 
 
+def dist(x: np.ndarray, y: np.ndarray) -> float:
+    """
+    Calculate the Euclidean distance between two points, excluding the first dimension.
+
+    :param x: First point.
+    :type x: numpy.ndarray
+    :param y: Second point.
+    :type y: numpy.ndarray
+    :return: Euclidean distance between x and y.
+    :rtype: float
+    """
+    return ((x - y) ** 2)[1:].sum() ** (0.5)
+
+
+def nearest(x: np.ndarray, centers: np.ndarray) -> float:
+    """
+    Find the nearest center to the given point x.
+
+    :param x: Point to find the nearest center for.
+    :type x: numpy.ndarray
+    :param centers: Array of center points.
+    :type centers: numpy.ndarray
+    :return: Distance to the nearest center.
+    :rtype: float
+    """
+    z = [dist(x, y) for y in centers if not (x == y).all()]
+    return abs(array(z)).min(axis=0)
+
+
 def get3DPSF(
     bead: np.ndarray,
     XYZ: np.ndarray,
@@ -341,61 +401,89 @@ def get3DPSF(
             "rotz",
         ],
     ).T
-
     return data
 
 
-def get2DPSF(bead: np.ndarray, options: dict) -> DataFrame:
+def get2DPSF(
+    bead: np.ndarray,
+    initial_guess: dict,
+    lower_bounds: dict,
+    upper_bounds: dict,
+    options: dict,
+) -> DataFrame:
     """
     Fit 2D Gaussians to the lateral and axial profiles of the bead.
 
     :param bead: 3D array representing the bead.
     :type bead: numpy.ndarray
+    :param initial_guess: Initial guess for the Gaussian parameters.
+    :type initial_guess: list
+    :param lower_bounds: Lower bounds for the Gaussian parameters.
+    :type lower_bounds: list
+    :param upper_bounds: Upper bounds for the Gaussian parameters.
+    :type upper_bounds: list
     :param options: Dictionary of options for the computation.
     :type options: dict
     :return: DataFrame containing the fitted parameters.
     :rtype: pandas.DataFrame
     """
-    latProfile, axProfile = getSlices(bead)
-    latFit = gaussian_2D(latProfile, options["px_per_um_lat"])
-    axFit = gaussian_2D(axProfile, options["px_per_um_ax"])
+    bead_lateral, bead_axial = getSlices(bead)
+
+    # lateral fit
+    x = array(range(bead_lateral.shape[0]))
+    popt_lateral, _ = opt.curve_fit(
+        gaussian_1D,
+        x,
+        bead_lateral,
+        p0=initial_guess,
+        bounds=(lower_bounds, upper_bounds),
+    )
+    amplitude, xo, sigma_lateral, offset = (
+        popt_lateral[0],
+        popt_lateral[1],
+        popt_lateral[2],
+        popt_lateral[3],
+    )
+    FWHM_lateral = (
+        np.abs(4 * sigma_lateral * np.sqrt(-0.5 * np.log(0.5)))
+        / options["px_per_um_lat"]
+    )
+
+    # axial fit
+    x = array(range(bead_axial.shape[0]))
+    popt_axial, _ = opt.curve_fit(
+        gaussian_1D,
+        x,
+        bead_axial,
+        p0=initial_guess,
+        bounds=(lower_bounds, upper_bounds),
+    )
+    amplitude, zo, sigma_axial, offset = (
+        popt_axial[0],
+        popt_axial[1],
+        popt_axial[2],
+        popt_axial[3],
+    )
+    FWHM_axial = (
+        np.abs(4 * sigma_axial * np.sqrt(-0.5 * np.log(0.5))) / options["px_per_um_ax"]
+    )
+
     data = DataFrame(
-        [latFit[3], axFit[3]],
+        [xo, xo, zo, amplitude, offset, FWHM_lateral, FWHM_axial, 0, 0, 0],
         index=[
+            "xo",
+            "yo",
+            "zo",
+            "amplitude",
+            "offset",
             "FWHM_lat",
             "FWHM_ax",
+            "rotx",
+            "roty",
+            "rotz",
         ],
     ).T
     return data
-
-
-def dist(x: np.ndarray, y: np.ndarray) -> float:
-    """
-    Calculate the Euclidean distance between two points, excluding the first dimension.
-
-    :param x: First point.
-    :type x: numpy.ndarray
-    :param y: Second point.
-    :type y: numpy.ndarray
-    :return: Euclidean distance between x and y.
-    :rtype: float
-    """
-    return ((x - y) ** 2)[1:].sum() ** (0.5)
-
-
-def nearest(x: np.ndarray, centers: np.ndarray) -> float:
-    """
-    Find the nearest center to the given point x.
-
-    :param x: Point to find the nearest center for.
-    :type x: numpy.ndarray
-    :param centers: Array of center points.
-    :type centers: numpy.ndarray
-    :return: Distance to the nearest center.
-    :rtype: float
-    """
-    z = [dist(x, y) for y in centers if not (x == y).all()]
-    return abs(array(z)).min(axis=0)
 
 
 def gaussian_1D(
@@ -418,27 +506,6 @@ def gaussian_1D(
     :rtype: numpy.ndarray
     """
     return a * exp(-((x - mu) ** 2) / (2 * sigma**2)) + b
-
-
-def gaussian_2D(
-    yRaw: np.ndarray, scale: float
-) -> Tuple[np.ndarray, np.ndarray, np.ndarray, float]:
-    """
-    Fit a 2D Gaussian to the given data.
-
-    :param yRaw: Input data.
-    :type yRaw: numpy.ndarray
-    :param scale: Scale factor for the data.
-    :type scale: float
-    :return: Tuple containing the x values, raw y values, fitted y values, and FWHM.
-    :rtype: tuple
-    """
-    y = yRaw - (yRaw[0] + yRaw[-1]) / 2
-    x = array(range(y.shape[0])) - y.shape[0] / 2
-    popt, _ = opt.curve_fit(gaussian_1D, x, y, p0=[1, 0, 1, 0])
-    FWHM = 2.355 * popt[2] / scale
-    yFit = gaussian_1D(x, *popt)
-    return x, y, yFit, FWHM
 
 
 def gaussian_3D(
